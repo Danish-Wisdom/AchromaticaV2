@@ -5,7 +5,14 @@
 
 
 #include "Camera/CameraComponent.h"
+#include "Data/CharacterClassInfo.h"
+#include "Game/PlayerState/AchromaticaPlayerState.h"
+#include "GameFramework/SpringArmComponent.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameplayAbilitySystem/AchromaticaAbilitySystemComp.h"
+#include "GameplayAbilitySystem/Attributes/AchromaticaAttributeSet.h"
+#include "Libraries/AchromaticaAbilitySystemLibrary.h"
 
 
 // Sets default values
@@ -34,7 +41,104 @@ AAchromaticaCharacter::AAchromaticaCharacter()
 	GetCharacterMovement()->AirControl = 0.2f;
 }
 
-// Called when the game starts or when spawned
+void AAchromaticaCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (HasAuthority())
+	{
+		InitAbilityActorInfo();
+	}
+}
+
+void AAchromaticaCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	InitAbilityActorInfo();
+}
+
+void AAchromaticaCharacter::InitAbilityActorInfo()
+{
+	if (AAchromaticaPlayerState* AchromaticaPlayerState = GetPlayerState<AAchromaticaPlayerState>())
+	{
+		AbilitySystemComp = AchromaticaPlayerState->GetAchromaticaAbilitySystemComp();
+		AttributeSet = AchromaticaPlayerState->GetAchromaticaAttributeSet();
+
+		if (IsValid(AbilitySystemComp))
+		{
+			AbilitySystemComp->InitAbilityActorInfo(AchromaticaPlayerState, this);
+			BindCallbacksToDependencies();
+
+			if (HasAuthority())
+			{
+				InitClassDefaults();
+			}
+		}
+		
+	}
+}
+
+void AAchromaticaCharacter::InitClassDefaults()
+{
+	if (!CharacterTag.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("No Character Tag on this character: %s"), *GetNameSafe(this));
+	}
+	else if (UCharacterClassInfo* ClassInfo = UAchromaticaAbilitySystemLibrary::GetClassDefaults(this))
+	{
+		if (const FCharacterClassDefaultInfo* SelectedClassInfo = ClassInfo->ClassDefaultInfoMap.Find(CharacterTag))
+		{
+			if (IsValid(AbilitySystemComp))
+			{
+				AbilitySystemComp->AddCharacterAbilities(SelectedClassInfo->StartingAbilities);
+				AbilitySystemComp->AddCharacterPassives(SelectedClassInfo->StartingPassives);
+				AbilitySystemComp->InitializeDefaultAttributes(SelectedClassInfo->DefaultAttributes);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("No Class Info found for Tag: %s"), *CharacterTag.ToString());
+		}
+	}
+	
+}
+
+void AAchromaticaCharacter::BindCallbacksToDependencies()
+{
+	if (IsValid(AbilitySystemComp) && IsValid(AttributeSet))
+	{
+		AbilitySystemComp->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnHealthChanged(Data.NewValue, AttributeSet->GetMaxHealth());
+			});
+
+		AbilitySystemComp->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetStaminaAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnStaminaChanged(Data.NewValue, AttributeSet->GetMaxStamina());
+			});
+
+		AbilitySystemComp->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetManaAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnManaChanged(Data.NewValue, AttributeSet->GetMaxMana());
+			});
+	}
+}
+
+void AAchromaticaCharacter::BroadcastInitialValues()
+{
+	if (IsValid(AttributeSet))
+	{
+		OnHealthChanged(AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
+		OnStaminaChanged(AttributeSet->GetStamina(), AttributeSet->GetMaxStamina());
+		OnManaChanged(AttributeSet->GetMana(), AttributeSet->GetMaxMana());
+	}
+}
+
+
 void AAchromaticaCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -43,13 +147,13 @@ void AAchromaticaCharacter::BeginPlay()
 	
 }
 
-// Called every frame
+
 void AAchromaticaCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
 
-// Called to bind functionality to input
+
 void AAchromaticaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -111,4 +215,6 @@ void AAchromaticaCharacter::Attack()
 	UE_LOG(LogTemp, Warning, TEXT("Attack") );
 	bLockControllerRotation = !bLockControllerRotation;
 }
+
+
 

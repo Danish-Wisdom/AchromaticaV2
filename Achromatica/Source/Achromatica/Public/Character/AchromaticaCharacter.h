@@ -3,11 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/Character.h"
-#include "GameFramework/SpringArmComponent.h"
+
+
 #include "AchromaticaCharacter.generated.h"
 
 class UCameraComponent;
+class USpringArmComponent;
+class UAchromaticaAttributeSet;
+class UAchromaticaAbilitySystemComp;
 
 UCLASS()
 class ACHROMATICA_API AAchromaticaCharacter : public ACharacter
@@ -23,6 +28,19 @@ class ACHROMATICA_API AAchromaticaCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AAchromaticaCharacter();
+
+
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnHealthChanged(const float& CurrentHealth, const float& MaxHealth);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnStaminaChanged(const float& CurrentStamina, const float& MaxStamina);
+	
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnManaChanged(const float& CurrentMana, const float& MaxMana);
 
 protected:
 	// Called when the game starts or when spawned
@@ -46,6 +64,7 @@ public:
 
 
 private:
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Settings", meta = (AllowPrivateAccess = "true"))
 	float WalkSpeed = 200.f;
 	
@@ -59,7 +78,26 @@ private:
 	float VerticalRotationSpeed = 10.f;
 
 	bool bLockControllerRotation = false;
-public:
 
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAchromaticaAbilitySystemComp> AbilitySystemComp;
+
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAchromaticaAttributeSet> AttributeSet;
+
+	UPROPERTY(EditAnywhere, Category = "Custom Values|Character Tags")
+	FGameplayTag CharacterTag;
+
+	void InitAbilityActorInfo();
+	void InitClassDefaults();
+	void BindCallbacksToDependencies();
+
+	UFUNCTION(BlueprintCallable)
+	void BroadcastInitialValues();
+
+public:
+	
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	
 };
