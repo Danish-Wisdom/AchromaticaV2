@@ -60,8 +60,8 @@ private:
 	float ControllerDeadZone = 0.1f;
 
 	
-
-	AAchromaticaCharacter* ControlledCharacter = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<AAchromaticaCharacter> ControlledCharacter = nullptr;
 
 
 	
