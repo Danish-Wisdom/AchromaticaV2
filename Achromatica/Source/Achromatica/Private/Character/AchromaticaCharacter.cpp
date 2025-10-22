@@ -147,6 +147,11 @@ void AAchromaticaCharacter::BeginPlay()
 	
 }
 
+UAbilitySystemComponent* AAchromaticaCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComp;
+}
+
 
 void AAchromaticaCharacter::Tick(float DeltaTime)
 {
@@ -213,7 +218,7 @@ void AAchromaticaCharacter::InstantJump(const float& JumpHeight)
 void AAchromaticaCharacter::Attack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Attack") );
-	bLockControllerRotation = !bLockControllerRotation;
+	
 }
 
 

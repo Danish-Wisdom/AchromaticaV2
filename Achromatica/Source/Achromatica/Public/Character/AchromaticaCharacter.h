@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameplayTagContainer.h"
 #include "GameFramework/Character.h"
 
@@ -15,7 +16,7 @@ class UAchromaticaAttributeSet;
 class UAchromaticaAbilitySystemComp;
 
 UCLASS()
-class ACHROMATICA_API AAchromaticaCharacter : public ACharacter
+class ACHROMATICA_API AAchromaticaCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -45,6 +46,8 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 public:
 	// Called every frame
